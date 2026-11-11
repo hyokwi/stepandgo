@@ -210,6 +210,10 @@ footer{font-family:var(--mono);font-size:12px;opacity:.6}
 .whose b{color:#d6452f}
 
 .canvas-inner{position:relative}
+/* 캔버스 아래 숨은 사본: 화면에선 캔버스에 가려지고, Clarity 녹화(캔버스 픽셀을 저장 못 함)에서만 비쳐 보인다 */
+.box-mirror{position:absolute;left:0;top:0;width:100%;aspect-ratio:10/7;border-radius:6px;pointer-events:none;z-index:0}
+.box-mirror:not([src]){display:none}
+#box{position:relative;z-index:1}
 
 #reset.is-armed{background:#e8553f;border-color:#e8553f;color:#fff}
 
@@ -377,6 +381,7 @@ footer{font-family:var(--mono);font-size:12px;opacity:.6}
     <div class="canvas-wrap">
       <p class="picked" id="picked" aria-hidden="true">고른 것: -</p>
       <div class="canvas-inner">
+        <img id="boxMirror" class="box-mirror" alt="" aria-hidden="true">
         <canvas id="box" tabindex="0" aria-label="스티커를 붙이는 상자 면. 방향키로 위치를 옮기고 Enter로 붙여요." aria-describedby="status"></canvas>
         <p class="layer-count">당신 <span id="count">0</span>겹</p>
       </div>
@@ -854,6 +859,20 @@ window.HYOKI_STAMPS={
     paint(); updateUI();
     const u = $('#undo'), r = $('#redo');
     if (u) { u.disabled = state.sealed || !lastIsPen(); r.disabled = state.sealed || !redoStack.length; }
+    mirrorSoon();
+  }
+  // Clarity 같은 녹화 도구는 캔버스 안 그림을 저장하지 못해서, 작은 JPEG 사본을 <img>로 함께 남긴다
+  let mirrorT = 0;
+  const mirrorCv = mk(500, 350);
+  function mirrorSoon() {
+    clearTimeout(mirrorT);
+    mirrorT = setTimeout(() => {
+      try {
+        const mx = mirrorCv.getContext('2d');
+        mx.drawImage(cv, 0, 0, 500, 350);
+        $('#boxMirror').src = mirrorCv.toDataURL('image/jpeg', 0.6);
+      } catch (e) {}
+    }, 500);
   }
 
   /* ---------- 트레이 ---------- */
